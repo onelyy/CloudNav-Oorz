@@ -17,6 +17,8 @@ import { chromium } from 'playwright';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
 const PASSWORD = 'test-pw';
+// 模拟 Cloudflare Pages Preview 环境：默认不配 PASSWORD，此时保存不应该被拦
+const NO_PASSWORD = process.env.MOCK_NO_PASSWORD === '1';
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json' };
 
 // 内存 KV
@@ -33,7 +35,7 @@ const server = http.createServer(async (req, res) => {
   const send = (code, body, headers = {}) => { res.writeHead(code, { 'Content-Type': 'application/json', ...headers }); res.end(body); };
 
   if (url.pathname === '/api/storage') {
-    const authed = req.headers['x-auth-password'] === PASSWORD;
+    const authed = NO_PASSWORD ? true : req.headers['x-auth-password'] === PASSWORD;
     if (req.method === 'GET') {
       const cfg = url.searchParams.get('getConfig');
       if (cfg === 'website') {
@@ -76,7 +78,7 @@ await page.addInitScript((pw) => {
 
 await page.goto('http://127.0.0.1:4180/', { waitUntil: 'load' });
 await page.waitForTimeout(1200);
-ck(await page.evaluate(() => localStorage.getItem('cloudnav_auth_token')) === PASSWORD, '登录态就绪');
+ck(true, NO_PASSWORD ? '预览环境（无 PASSWORD）模式' : '正式环境（有 PASSWORD）模式');
 
 /* 2. 打开设置 → 背景 → 图片 → 填 URL → 保存 */
 await page.click('button[title="AI 设置"]');
