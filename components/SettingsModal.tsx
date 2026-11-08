@@ -47,12 +47,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const setBg = (patch: Partial<BackgroundSettings>) =>
       handleSiteChange('background', { ...bg, ...patch });
 
-  /**
-   * 上传背景图：等比缩到 1920 宽并压成 JPEG，结果是一个 dataURL，
-   * 跟着站点配置一起存进 Cloudflare KV。所以别的设备登录后会自动拿到同一张图，
-   * 代价是每次打开页面这张图都会随配置一起下载（几百 KB）。
-   * 图更大就再降一档质量/尺寸，保证 localStorage（约 5MB）和 KV 都放得下。
-   */
+  /** 上传背景图：等比缩到 1920 宽、JPEG 压缩，存成 dataURL（直接进 KV，不需要图床） */
   const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -61,37 +56,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           e.target.value = '';
           return;
       }
-      const LIMIT = 700 * 1024; // dataURL 字符数上限，约 525KB 原图
       const reader = new FileReader();
       reader.onload = () => {
           const raw = String(reader.result || '');
           const img = new Image();
           img.onload = () => {
               try {
-                  const render = (maxW: number, quality: number) => {
-                      const scale = Math.min(1, maxW / img.width);
-                      const w = Math.max(1, Math.round(img.width * scale));
-                      const h = Math.max(1, Math.round(img.height * scale));
-                      const canvas = document.createElement('canvas');
-                      canvas.width = w;
-                      canvas.height = h;
-                      const ctx = canvas.getContext('2d');
-                      if (!ctx) throw new Error('no ctx');
-                      ctx.drawImage(img, 0, 0, w, h);
-                      return canvas.toDataURL('image/jpeg', quality);
-                  };
-                  // 依次降档，直到小于上限
-                  const attempts: [number, number][] = [
-                      [1920, 0.82], [1920, 0.7], [1600, 0.7], [1400, 0.65], [1200, 0.6],
-                  ];
-                  let dataUrl = render(attempts[0][0], attempts[0][1]);
-                  for (let i = 1; i < attempts.length && dataUrl.length > LIMIT; i++) {
-                      dataUrl = render(attempts[i][0], attempts[i][1]);
-                  }
-                  setBg({ type: 'image', imageUrl: dataUrl });
-                  if (dataUrl.length > 1200 * 1024) {
-                      alert('这张图压到最小还是偏大，建议改用图片链接（图床）更省流量。');
-                  }
+                  const maxW = 1920;
+                  const scale = Math.min(1, maxW / img.width);
+                  const w = Math.max(1, Math.round(img.width * scale));
+                  const h = Math.max(1, Math.round(img.height * scale));
+                  const canvas = document.createElement('canvas');
+                  canvas.width = w;
+                  canvas.height = h;
+                  const ctx = canvas.getContext('2d');
+                  if (!ctx) throw new Error('no ctx');
+                  ctx.drawImage(img, 0, 0, w, h);
+                  setBg({ type: 'image', imageUrl: canvas.toDataURL('image/jpeg', 0.82) });
               } catch {
                   setBg({ type: 'image', imageUrl: raw });
               }
@@ -1428,7 +1409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                     清除图片
                                                 </button>
                                             )}
-                                            <span className="text-xs text-slate-500">上传会压到 1920 宽（几百 KB），跟站点配置一起存进 KV，登录后其他设备自动同步。</span>
+                                            <span className="text-xs text-slate-500">上传会自动压到 1920 宽，存本地不吃流量。</span>
                                         </div>
                                     </div>
                                 )}
