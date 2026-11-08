@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Bot, Key, Globe, Sparkles, PauseCircle, Wrench, Box, Copy, Check, LayoutTemplate, Info, Download, Sidebar, Keyboard, MousePointerClick, AlertTriangle, Package, Zap, Menu, Upload } from 'lucide-react';
-import { AIConfig, LinkItem, Category, SiteSettings } from '../types';
+import { AIConfig, LinkItem, Category, SiteSettings, BackgroundSettings, DEFAULT_BACKGROUND, BING_BACKGROUND_URL, GRADIENT_PRESETS } from '../types';
 import { generateLinkDescription } from '../services/geminiService';
 import JSZip from 'jszip';
 
@@ -29,7 +29,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       favicon: siteSettings?.favicon || '',
       cardStyle: siteSettings?.cardStyle || 'detailed',
       requirePasswordOnVisit: siteSettings?.requirePasswordOnVisit ?? false,
-      passwordExpiryDays: siteSettings?.passwordExpiryDays ?? 7
+      passwordExpiryDays: siteSettings?.passwordExpiryDays ?? 7,
+      background: siteSettings?.background || DEFAULT_BACKGROUND
   }));
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,6 +42,56 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [browserType, setBrowserType] = useState<'chrome' | 'firefox'>('chrome');
   const [isZipping, setIsZipping] = useState(false);
   const faviconUploadRef = useRef<HTMLInputElement>(null);
+  const backgroundUploadRef = useRef<HTMLInputElement>(null);
+  const bg: BackgroundSettings = localSiteSettings.background || DEFAULT_BACKGROUND;
+  const setBg = (patch: Partial<BackgroundSettings>) =>
+      handleSiteChange('background', { ...bg, ...patch });
+
+  /** 上传背景图：等比缩到 1920 宽、JPEG 压缩，存成 dataURL（直接进 KV，不需要图床） */
+  const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+          alert('请上传图片文件');
+          e.target.value = '';
+          return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+          const raw = String(reader.result || '');
+          const img = new Image();
+          img.onload = () => {
+              try {
+                  const maxW = 1920;
+                  const scale = Math.min(1, maxW / img.width);
+                  const w = Math.max(1, Math.round(img.width * scale));
+                  const h = Math.max(1, Math.round(img.height * scale));
+                  const canvas = document.createElement('canvas');
+                  canvas.width = w;
+                  canvas.height = h;
+                  const ctx = canvas.getContext('2d');
+                  if (!ctx) throw new Error('no ctx');
+                  ctx.drawImage(img, 0, 0, w, h);
+                  setBg({ type: 'image', imageUrl: canvas.toDataURL('image/jpeg', 0.82) });
+              } catch {
+                  setBg({ type: 'image', imageUrl: raw });
+              }
+          };
+          img.onerror = () => setBg({ type: 'image', imageUrl: raw });
+          img.src = raw;
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+  };
+
+  /** 背景预览用的样式（和 App.tsx 里那层保持一致） */
+  const bgPreviewStyle: React.CSSProperties = (() => {
+      if (bg.type === 'color') return { backgroundColor: bg.color };
+      if (bg.type === 'gradient') return { backgroundImage: bg.gradient };
+      const url = bg.type === 'bing' ? BING_BACKGROUND_URL : bg.imageUrl;
+      if (!url) return { backgroundColor: 'rgba(148,163,184,0.18)' };
+      return { backgroundImage: `url("${url}")`, backgroundSize: 'cover', backgroundPosition: 'center' };
+  })();
   
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
 
@@ -53,7 +104,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           favicon: siteSettings?.favicon || '',
           cardStyle: siteSettings?.cardStyle || 'detailed',
           requirePasswordOnVisit: siteSettings?.requirePasswordOnVisit ?? false,
-          passwordExpiryDays: siteSettings?.passwordExpiryDays ?? 7
+          passwordExpiryDays: siteSettings?.passwordExpiryDays ?? 7,
+          background: siteSettings?.background || DEFAULT_BACKGROUND
       };
       setLocalSiteSettings(safeSettings);
 
@@ -1249,6 +1301,167 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     />
                                 </div>
                                 <p className="text-xs text-slate-500 mt-1">设置为 0 表示永久不退出，默认 7 天后自动退出</p>
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">背景</label>
+                                <p className="text-xs text-slate-500 mt-1">支持纯色、渐变、图片和必应每日一图，登录后自动同步到所有设备。</p>
+
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {([
+                                        ['none', '无'],
+                                        ['color', '纯色'],
+                                        ['gradient', '渐变'],
+                                        ['image', '图片'],
+                                        ['bing', '必应每日'],
+                                    ] as [BackgroundSettings['type'], string][]).map(([value, label]) => (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setBg({ type: value })}
+                                            className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                                                bg.type === value
+                                                    ? 'border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
+                                                    : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-blue-400'
+                                            }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {bg.type === 'color' && (
+                                    <div className="mt-3 flex items-center gap-3">
+                                        <input
+                                            type="color"
+                                            value={bg.color}
+                                            onChange={(e) => setBg({ color: e.target.value })}
+                                            className="h-9 w-16 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent cursor-pointer"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={bg.color}
+                                            onChange={(e) => setBg({ color: e.target.value })}
+                                            className="flex-1 p-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                                        />
+                                    </div>
+                                )}
+
+                                {bg.type === 'gradient' && (
+                                    <div className="mt-3 space-y-3">
+                                        <div className="flex flex-wrap gap-2">
+                                            {GRADIENT_PRESETS.map((preset) => (
+                                                <button
+                                                    key={preset.name}
+                                                    type="button"
+                                                    onClick={() => setBg({ gradient: preset.value })}
+                                                    title={preset.value}
+                                                    className={`h-9 w-16 rounded-lg border-2 transition-transform hover:scale-105 ${
+                                                        bg.gradient === preset.value ? 'border-blue-500' : 'border-transparent'
+                                                    }`}
+                                                    style={{ backgroundImage: preset.value }}
+                                                >
+                                                    <span className="sr-only">{preset.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={bg.gradient}
+                                            onChange={(e) => setBg({ gradient: e.target.value })}
+                                            placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                                            className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                                        />
+                                    </div>
+                                )}
+
+                                {bg.type === 'image' && (
+                                    <div className="mt-3 space-y-2">
+                                        <input
+                                            type="text"
+                                            value={bg.imageUrl.startsWith('data:') ? '' : bg.imageUrl}
+                                            onChange={(e) => setBg({ imageUrl: e.target.value })}
+                                            placeholder={bg.imageUrl.startsWith('data:') ? '已使用本地上传的图片' : 'https://example.com/bg.jpg'}
+                                            className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <input
+                                                ref={backgroundUploadRef}
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleBackgroundUpload}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => backgroundUploadRef.current?.click()}
+                                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                            >
+                                                <Upload size={12} />
+                                                本地上传
+                                            </button>
+                                            {bg.imageUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBg({ imageUrl: '' })}
+                                                    className="text-xs text-slate-500 hover:text-red-500"
+                                                >
+                                                    清除图片
+                                                </button>
+                                            )}
+                                            <span className="text-xs text-slate-500">上传会自动压到 1920 宽，存本地不吃流量。</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {bg.type === 'bing' && (
+                                    <p className="mt-3 text-xs text-slate-500">
+                                        每天自动换成必应首页那张图（走第三方代理 api.dujin.org，加载不出来时回落到默认背景）。
+                                    </p>
+                                )}
+
+                                {bg.type !== 'none' && (
+                                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                                                <span>模糊</span>
+                                                <span className="font-mono">{bg.blur}px</span>
+                                            </label>
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={30}
+                                                value={bg.blur}
+                                                onChange={(e) => setBg({ blur: parseInt(e.target.value) || 0 })}
+                                                className="w-full mt-1 accent-blue-600"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                                                <span>暗化</span>
+                                                <span className="font-mono">{bg.dim}%</span>
+                                            </label>
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={80}
+                                                value={bg.dim}
+                                                onChange={(e) => setBg({ dim: parseInt(e.target.value) || 0 })}
+                                                className="w-full mt-1 accent-blue-600"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-3 h-24 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden relative" style={bgPreviewStyle}>
+                                    {bg.type !== 'none' && (bg.blur > 0) && (
+                                        <div className="absolute inset-0" style={{ backdropFilter: `blur(${Math.min(bg.blur, 12)}px)` }} />
+                                    )}
+                                    {bg.type !== 'none' && bg.dim > 0 && (
+                                        <div className="absolute inset-0" style={{ backgroundColor: `rgba(2, 6, 23, ${bg.dim / 100})` }} />
+                                    )}
+                                    <span className="absolute bottom-2 right-2 text-[10px] text-white bg-black/40 rounded px-1.5 py-0.5">预览</span>
+                                </div>
                             </div>
                         </div>
                     </div>

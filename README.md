@@ -7,6 +7,15 @@ https://github.com/aabacada/CloudNav-abcd
 <details>
 <summary>更新日志</summary>
 
+### 2026.11.08（onelyy fork）
+
+1. **新增自定义背景**：设置 → 站点设置 → 背景，支持「无 / 纯色 / 渐变 / 图片 / 必应每日一图」。
+   - 图片可直接填 URL，也可以本地上传（自动压到 1920 宽、JPEG 质量 0.82，存成 dataURL，不需要图床）
+   - 可调**模糊**（0–30px）和**暗化**（0–80%），图片太亮时压一压，卡片文字更清楚
+   - 背景配置跟随 `siteSettings` 一起存 KV（`website_config`），登录后自动同步到所有设备
+   - 实现：`types.ts` 的 `BackgroundSettings` + `App.tsx` 里固定定位的负 z-index 图层 + 设置弹层的交互面板
+2. 新增回归测试 `tests/background-layer.test.mjs`、`tests/background-settings-ui.test.mjs`（jsdom 真渲染打包产物），`npm run test:bg` 一键跑。
+
 ### 2026.04.07
 
 1. 修复 AI 配置可被未授权读取的问题，`/api/storage?getConfig=ai` 现已要求登录校验。
