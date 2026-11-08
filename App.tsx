@@ -714,8 +714,7 @@ function App() {
                         favicon: websiteConfigData.favicon || prev.favicon,
                         cardStyle: websiteConfigData.cardStyle || prev.cardStyle,
                         requirePasswordOnVisit: websiteConfigData.requirePasswordOnVisit !== undefined ? websiteConfigData.requirePasswordOnVisit : prev.requirePasswordOnVisit,
-                        passwordExpiryDays: websiteConfigData.passwordExpiryDays !== undefined ? websiteConfigData.passwordExpiryDays : prev.passwordExpiryDays, 
-                        background: websiteConfigData.background || prev.background
+                        passwordExpiryDays: websiteConfigData.passwordExpiryDays !== undefined ? websiteConfigData.passwordExpiryDays : prev.passwordExpiryDays
                     }));
                 }
             }
@@ -1028,8 +1027,7 @@ function App() {
                             favicon: websiteConfigData.favicon || prev.favicon,
                             cardStyle: websiteConfigData.cardStyle || prev.cardStyle,
                             requirePasswordOnVisit: websiteConfigData.requirePasswordOnVisit !== undefined ? websiteConfigData.requirePasswordOnVisit : prev.requirePasswordOnVisit,
-                            passwordExpiryDays: websiteConfigData.passwordExpiryDays !== undefined ? websiteConfigData.passwordExpiryDays : prev.passwordExpiryDays, 
-                            background: websiteConfigData.background || prev.background
+                            passwordExpiryDays: websiteConfigData.passwordExpiryDays !== undefined ? websiteConfigData.passwordExpiryDays : prev.passwordExpiryDays
                         }));
                     }
                 }
@@ -2245,8 +2243,6 @@ function App() {
     return style;
   })();
   const bgDim = Math.max(0, Math.min(80, background?.dim || 0));
-  // 有背景时把侧栏和主区域变半透明，否则纯色面板会把背景整块盖住（看不出来）
-  const bgActive = !!bgLayerStyle;
 
   return (
     <div className="flex h-screen overflow-hidden text-slate-900 dark:text-slate-50">
@@ -2359,7 +2355,7 @@ function App() {
       <aside 
         className={`
           fixed lg:static inset-y-0 left-0 z-30 w-64 transform transition-transform duration-300 ease-in-out
-          ${bgActive ? 'bg-white/75 dark:bg-slate-900/70 backdrop-blur-md' : 'bg-white dark:bg-slate-800'} border-r border-slate-200 dark:border-slate-700 flex flex-col
+          bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
@@ -2477,7 +2473,7 @@ function App() {
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 flex flex-col h-full ${bgActive ? 'bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-md' : 'bg-slate-50 dark:bg-slate-900'} overflow-hidden relative`}>
+      <main className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-900 overflow-hidden relative">
         
         {/* Header */}
         <header className="h-16 px-4 lg:px-8 flex items-center justify-between bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 shrink-0">
