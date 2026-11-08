@@ -216,7 +216,12 @@ export const onRequestGet = async (context: { env: Env; request: Request }) => {
         passwordExpiryDays: 7,
         ...websiteConfig,
       }), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: {
+          'Content-Type': 'application/json',
+          // 站点配置变化很少，允许浏览器短缓存 + 后台刷新，避免每次打开都打一次 Functions
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+          ...corsHeaders,
+        },
       });
     }
     
@@ -404,6 +409,15 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
     
     // 如果是保存网站配置
     if (body.saveConfig === 'website') {
+      // 站点配置（标题/图标/背景/是否访问验密）必须登录后才能改，否则任何人都能篡改首页。
+      // 例外：整个站点没配 PASSWORD（例如 Cloudflare Pages 的 Preview 环境没继承变量）时，
+      // 按「公开站点」处理，不拦——否则预览环境会 500，设置根本存不进去。
+      if (env.PASSWORD) {
+        const authCheck = await validateAuth(request, env, corsHeaders, { requireSession: true });
+        if (!authCheck.ok) {
+          return authCheck.response;
+        }
+      }
       await env.CLOUDNAV_KV.put('website_config', JSON.stringify(body.config));
       return new Response(JSON.stringify({ success: true }), {
         headers: { 'Content-Type': 'application/json', ...corsHeaders },

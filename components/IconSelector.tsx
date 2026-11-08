@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as LucideIcons from 'lucide-react';
+import { isKnownIcon, ICON_NAMES } from './iconMap';
 import { X, Search, ExternalLink } from 'lucide-react';
 import Icon from './Icon';
 
@@ -7,26 +7,8 @@ interface IconSelectorProps {
   onSelectIcon: (iconName: string) => void;
 }
 
-// 常用图标列表，可以根据需要扩展
-const commonIcons = [
-  'Star', 'Heart', 'Bookmark', 'Flag', 'Tag', 'Hash',
-  'Home', 'User', 'Users', 'Settings', 'Bell', 'Mail',
-  'Calendar', 'Clock', 'MapPin', 'Phone', 'Camera', 'Image',
-  'Folder', 'File', 'Archive', 'Trash2', 'Download', 'Upload',
-  'Search', 'Filter', 'Menu', 'MoreVertical', 'ChevronDown', 'ChevronUp',
-  'Plus', 'Minus', 'X', 'Check', 'AlertCircle', 'Info',
-  'Edit', 'Copy', 'Share', 'Link', 'ExternalLink', 'Lock',
-  'Code', 'Terminal', 'Database', 'Server', 'Cloud', 'Wifi',
-  'ShoppingCart', 'CreditCard', 'Package', 'Truck', 'Store',
-  'Music', 'Play', 'Pause', 'Volume2', 'Headphones', 'Mic',
-  'Book', 'BookOpen', 'FileText', 'PenTool', 'Highlighter', 'Type',
-  'Layout', 'Grid', 'List', 'Columns', 'Sidebar', 'Layers',
-  'Circle', 'Square', 'Triangle', 'Hexagon', 'Zap', 'Target',
-  'Rocket', 'Plane', 'Car', 'Bike', 'Ship', 'Train',
-  'Moon', 'Sun', 'CloudRain', 'CloudSnow', 'Wind', 'Thermometer',
-  'Github', 'Gitlab', 'Chrome', 'Firefox', 'Safari', 'Edge',
-  'MessageSquare', 'MessageCircle', 'Send', 'AtSign', 'Percent'
-];
+// 可选图标统一来自 iconMap 白名单（打包只含用到的，避免整库 863KB）
+const commonIcons = ICON_NAMES;
 
 const IconSelector: React.FC<IconSelectorProps> = ({ 
   onSelectIcon
@@ -61,20 +43,9 @@ const IconSelector: React.FC<IconSelectorProps> = ({
     // 检查是否是常用图标列表中的图标
     if (commonIcons.includes(iconName)) return true;
     
-    // 检查是否是 Lucide 图标库中的图标
+    // 检查是否在白名单里（含 kebab-case → PascalCase 归一化）
     try {
-      // 首先尝试直接匹配
-      if (iconName in LucideIcons) return true;
-      
-      // 如果包含连字符，尝试转换为 PascalCase
-      if (iconName.includes('-')) {
-        const pascalName = kebabToPascal(iconName);
-        return pascalName in LucideIcons;
-      }
-      
-      // 尝试首字母大写
-      const capitalizedName = iconName.charAt(0).toUpperCase() + iconName.slice(1);
-      return capitalizedName in LucideIcons;
+      return isKnownIcon(iconName);
     } catch {
       return false;
     }

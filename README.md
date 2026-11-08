@@ -7,6 +7,22 @@ https://github.com/aabacada/CloudNav-abcd
 <details>
 <summary>更新日志</summary>
 
+### 2026.11.08 优化批次（onelyy fork）
+
+1. **安全**：`/api/storage` 的 `saveConfig=website` 之前**没有鉴权**，任何人都能改站点标题/图标/背景、
+   甚至关掉访问验密。现在和 `search`/`webdav` 一致，必须带登录态（`validateAuth` + session）。
+2. **首屏体积**（gzip）：
+   - Tailwind 从 `cdn.tailwindcss.com` 运行时 JIT 改为**本地构建**（42 KB CSS / gzip 7 KB），去掉了外网阻塞依赖
+   - 大弹层懒加载：设置（62 KB）、备份（13 KB）、导入（11 KB）打开时才拉，并拆出 `zip` 分包（97 KB）
+   - 图标库原本 `import * as LucideIcons` 把整包 863 KB 打进产物；改为 `components/iconMap.ts` **白名单（172 个图标）**，
+     降到 79 KB，且保留按名字取图标 + 旧数据别名兼容（Firefox/Safari/Edge → 相近图标）
+   - 主包 1.61 MB → **首屏实际只加载 ~230 KB**（app 27 + react 59 + icons 16 + dnd 15 + CSS 7，gzip）
+3. **缓存**：`GET /api/storage?getConfig=website` 之前没有任何缓存头，现在 `max-age=60, stale-while-revalidate=300`。
+4. **图标**：链接图标的 `<img>` 加 `loading="lazy" decoding="async" referrerPolicy="no-referrer"`。
+5. **分享**：补 `description` / `og:*` / `theme-color`，标题和图标随站点配置动态更新。
+6. **测试**：jsdom 换成 **Playwright 真浏览器 E2E**（`tests/background.e2e.mjs`，11 项断言），
+   因为打包后是多 chunk ESM，jsdom 跑不了。跑法：`npx playwright install chromium` 然后 `npm run test:bg`。
+
 ### 2026.11.08（onelyy fork）
 
 1. **新增自定义背景**：设置 → 站点设置 → 背景，支持「无 / 纯色 / 渐变 / 图片 / 必应每日一图」。
