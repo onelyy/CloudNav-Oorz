@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:bg": "vite build && node tests/background.e2e.mjs"
+    "test:bg": "vite build && node tests/background.e2e.mjs",
+    "test:save": "vite build && node tests/save-flow.e2e.mjs",
+    "test": "npm run test:bg && npm run test:save"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
