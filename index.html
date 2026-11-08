@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="https://lucide.dev/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="CloudNav 云航 —— 基于 Cloudflare Pages + KV 的自托管导航站，链接收藏、多端同步、AI 辅助整理。" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="CloudNav 云航" />
+    <meta property="og:description" content="自托管个人导航站：链接收藏、多端同步、可自定义背景。" />
+    <meta name="twitter:card" content="summary" />
     <title></title>
     <script>
       (function () {
@@ -66,6 +72,21 @@
 
           if (settings && settings.title) {
             document.title = settings.title;
+            var og = document.querySelector('meta[property="og:title"]');
+            if (og) og.setAttribute('content', settings.title);
+            if (settings.navTitle) {
+              var ogSite = document.querySelector('meta[property="og:site_name"]');
+              if (ogSite) ogSite.setAttribute('content', settings.navTitle);
+            }
+          }
+          if (settings && settings.favicon) {
+            var ogImg = document.querySelector('meta[property="og:image"]');
+            if (!ogImg) {
+              ogImg = document.createElement('meta');
+              ogImg.setAttribute('property', 'og:image');
+              document.head.appendChild(ogImg);
+            }
+            ogImg.setAttribute('content', settings.favicon);
           }
           if (settings && settings.favicon) {
             applyRoundedFavicon(settings.favicon);
@@ -73,53 +94,6 @@
         } catch (e) {}
       })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              primary: '#3b82f6',
-              secondary: '#64748b',
-              dark: '#0f172a',
-              card: '#1e293b',
-            }
-          }
-        }
-      }
-    </script>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      }
-      /* Custom scrollbar for sidebar */
-      .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-      }
-      .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-      }
-      /* Simple CSS-only tooltip transition */
-      .tooltip-custom {
-          transition: opacity 0.2s, visibility 0.2s;
-          pointer-events: none;
-      }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "buffer": "https://aistudiocdn.com/buffer@^6.0.3"
-  }
-}
-</script>
 </head>
   <body class="bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 transition-colors duration-300">
     <div id="root"></div>

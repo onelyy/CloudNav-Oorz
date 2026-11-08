@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { 
   Search, Plus, Upload, Moon, Sun, Menu, 
   Trash2, Edit2, Loader2, Cloud, CheckCircle2, AlertCircle,
@@ -30,10 +30,11 @@ import Icon from './components/Icon';
 import LinkModal from './components/LinkModal';
 import AuthModal from './components/AuthModal';
 import CategoryManagerModal from './components/CategoryManagerModal';
-import BackupModal from './components/BackupModal';
+// 大弹层按需加载：首屏只下载 App 本体，设置/备份/导入打开时才拉分包
+const BackupModal = lazy(() => import('./components/BackupModal'));
 import CategoryAuthModal from './components/CategoryAuthModal';
-import ImportModal from './components/ImportModal';
-import SettingsModal from './components/SettingsModal';
+const ImportModal = lazy(() => import('./components/ImportModal'));
+const SettingsModal = lazy(() => import('./components/SettingsModal'));
 import SearchConfigModal from './components/SearchConfigModal';
 import ContextMenu from './components/ContextMenu';
 import QRCodeModal from './components/QRCodeModal';
@@ -2083,7 +2084,7 @@ function App() {
             <div className={`text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold uppercase shrink-0 ${
               isDetailedView ? 'w-8 h-8 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800' : 'w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700'
             }`}>
-                {link.icon ? <img src={link.icon} alt="" className="w-5 h-5"/> : link.title.charAt(0)}
+                {link.icon ? <img src={link.icon} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="w-5 h-5"/> : link.title.charAt(0)}
             </div>
             
             {/* 标题 */}
@@ -2137,7 +2138,7 @@ function App() {
               <div className={`text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold uppercase shrink-0 ${
                 isDetailedView ? 'w-8 h-8 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800' : 'w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700'
               }`}>
-                  {link.icon ? <img src={link.icon} alt="" className="w-5 h-5"/> : link.title.charAt(0)}
+                  {link.icon ? <img src={link.icon} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="w-5 h-5"/> : link.title.charAt(0)}
               </div>
               
               {/* 标题 */}
@@ -2171,7 +2172,7 @@ function App() {
               <div className={`text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold uppercase shrink-0 ${
                 isDetailedView ? 'w-8 h-8 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800' : 'w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700'
               }`}>
-                  {link.icon ? <img src={link.icon} alt="" className="w-5 h-5"/> : link.title.charAt(0)}
+                  {link.icon ? <img src={link.icon} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="w-5 h-5"/> : link.title.charAt(0)}
               </div>
               
               {/* 标题 */}
@@ -2302,6 +2303,8 @@ function App() {
         onVerifyPassword={handleCategoryActionAuth}
       />
 
+      {isBackupModalOpen && (
+      <Suspense fallback={null}>
       <BackupModal
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}
@@ -2316,7 +2319,11 @@ function App() {
         aiConfig={aiConfig}
         onRestoreAIConfig={handleRestoreAIConfig}
       />
+      </Suspense>
+      )}
 
+      {isImportModalOpen && (
+      <Suspense fallback={null}>
       <ImportModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
@@ -2327,7 +2334,11 @@ function App() {
         onImportAIConfig={handleRestoreAIConfig}
         onImportWebDavConfig={handleRestoreWebDavConfig}
       />
+      </Suspense>
+      )}
 
+      {isSettingsModalOpen && (
+      <Suspense fallback={null}>
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
@@ -2339,6 +2350,8 @@ function App() {
         onUpdateLinks={(newLinks) => updateData(newLinks, categories)}
         authToken={authToken}
       />
+      </Suspense>
+      )}
 
       <SearchConfigModal
         isOpen={isSearchConfigModalOpen}
