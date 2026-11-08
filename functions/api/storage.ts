@@ -409,10 +409,14 @@ export const onRequestPost = async (context: { request: Request; env: Env }) => 
     
     // 如果是保存网站配置
     if (body.saveConfig === 'website') {
-      // 站点配置（标题/图标/背景/是否访问验密）必须登录后才能改，否则任何人都能篡改首页
-      const authCheck = await validateAuth(request, env, corsHeaders, { requireSession: true });
-      if (!authCheck.ok) {
-        return authCheck.response;
+      // 站点配置（标题/图标/背景/是否访问验密）必须登录后才能改，否则任何人都能篡改首页。
+      // 例外：站点没配 PASSWORD（Pages Preview 环境默认不继承变量）时按公开站点处理，
+      // 否则预览环境会 500，设置根本存不进去。
+      if (env.PASSWORD) {
+        const authCheck = await validateAuth(request, env, corsHeaders, { requireSession: true });
+        if (!authCheck.ok) {
+          return authCheck.response;
+        }
       }
       await env.CLOUDNAV_KV.put('website_config', JSON.stringify(body.config));
       return new Response(JSON.stringify({ success: true }), {
