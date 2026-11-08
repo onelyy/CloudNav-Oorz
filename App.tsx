@@ -24,7 +24,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LinkItem, Category, DEFAULT_CATEGORIES, INITIAL_LINKS, WebDavConfig, AIConfig, SearchMode, ExternalSearchSource, SearchConfig } from './types';
+import { LinkItem, Category, DEFAULT_CATEGORIES, INITIAL_LINKS, WebDavConfig, AIConfig, SearchMode, ExternalSearchSource, SearchConfig, SiteSettings, BackgroundSettings, DEFAULT_BACKGROUND, BING_BACKGROUND_URL } from './types';
 import { parseBookmarks } from './services/bookmarkParser';
 import Icon from './components/Icon';
 import LinkModal from './components/LinkModal';
@@ -153,7 +153,8 @@ function App() {
           favicon: '',
           cardStyle: 'detailed' as const,
           requirePasswordOnVisit: false,
-          passwordExpiryDays: 7
+          passwordExpiryDays: 7,
+          background: DEFAULT_BACKGROUND
       };
   });
   
@@ -2221,8 +2222,40 @@ function App() {
     );
   }
 
+  // 自定义背景：纯色 / 渐变 / 图片 / 必应每日一图
+  const background: BackgroundSettings = siteSettings.background || DEFAULT_BACKGROUND;
+  const bgLayerStyle: React.CSSProperties | null = (() => {
+    if (!background || background.type === 'none') return null;
+    if (background.type === 'color') return { backgroundColor: background.color };
+    if (background.type === 'gradient') return { backgroundImage: background.gradient };
+    const url = background.type === 'bing' ? BING_BACKGROUND_URL : (background.imageUrl || '');
+    if (!url) return null;
+    const style: React.CSSProperties = {
+      backgroundImage: `url("${url}")`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    };
+    if (background.blur > 0) {
+      style.filter = `blur(${background.blur}px)`;
+      style.transform = 'scale(1.06)';   // 模糊后边缘会露白，稍微放大盖住
+    }
+    return style;
+  })();
+  const bgDim = Math.max(0, Math.min(80, background?.dim || 0));
+
   return (
     <div className="flex h-screen overflow-hidden text-slate-900 dark:text-slate-50">
+      {bgLayerStyle && (
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10" style={bgLayerStyle} />
+      )}
+      {bgLayerStyle && bgDim > 0 && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 -z-10"
+          style={{ backgroundColor: `rgba(2, 6, 23, ${bgDim / 100})` }}
+        />
+      )}
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 z-[120] will-change-[clip-path,opacity,background-color] transition-[clip-path,opacity,background-color] duration-[620ms]"

@@ -25,7 +25,43 @@ export interface SiteSettings {
   cardStyle: 'detailed' | 'simple';
   requirePasswordOnVisit: boolean;
   passwordExpiryDays: number; // 密码过期天数，0表示永久不退出
+  background?: BackgroundSettings; // 自定义背景（2026-11 新增）
 }
+
+/** 背景类型：无 / 纯色 / 渐变 / 图片 / 必应每日一图 */
+export type BackgroundType = 'none' | 'color' | 'gradient' | 'image' | 'bing';
+
+export interface BackgroundSettings {
+  type: BackgroundType;
+  color: string;      // 纯色背景色
+  gradient: string;   // 渐变（完整 CSS 值）
+  imageUrl: string;   // 图片地址，或本地上传后的 dataURL
+  blur: number;       // 背景模糊半径 px（0-30）
+  dim: number;        // 遮罩暗化程度 %（0-80），图片太亮时压一点
+}
+
+export const DEFAULT_BACKGROUND: BackgroundSettings = {
+  type: 'none',
+  color: '#0f172a',
+  gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  imageUrl: '',
+  blur: 0,
+  dim: 0,
+};
+
+/** 必应每日一图（第三方代理，可换成自己的图源） */
+export const BING_BACKGROUND_URL = 'https://api.dujin.org/bing/1920.php';
+
+export const GRADIENT_PRESETS: { name: string; value: string }[] = [
+  { name: '极光', value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { name: '暮色', value: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)' },
+  { name: '深海', value: 'linear-gradient(160deg, #0f2027 0%, #203a43 50%, #2c5364 100%)' },
+  { name: '青柠', value: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+  { name: '午夜', value: 'linear-gradient(135deg, #232526 0%, #414345 100%)' },
+  { name: '星云', value: 'radial-gradient(circle at 20% 20%, #7f5af0 0%, #2cb67d 45%, #16161a 100%)' },
+  { name: '橘子汽水', value: 'linear-gradient(120deg, #f093fb 0%, #f5576c 100%)' },
+  { name: '晨雾', value: 'linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%)' },
+];
 
 export interface AppState {
   links: LinkItem[];
