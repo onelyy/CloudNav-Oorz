@@ -7,6 +7,13 @@ https://github.com/aabacada/CloudNav-abcd
 <details>
 <summary>更新日志</summary>
 
+### 2026.11.09 记住上次打开的目录
+
+- 打开导航页时**回到上次停留的目录**（例如 CESI），而不是每次跳回「置顶网站」
+- 存在 `localStorage.cloudnav_last_category`，只记目录 id；「置顶网站」不记
+- 兜底：目录被删了、或该目录需要密码且未解锁 → 自动退回「置顶网站」，不会卡在进不去的页面
+- 测试：`tests/last-category.e2e.mjs`（7 项断言），`npm run test:category`
+
 ### 2026.11.08 优化批次（onelyy fork）
 
 1. **安全**：`/api/storage` 的 `saveConfig=website` 之前**没有鉴权**，任何人都能改站点标题/图标/背景、

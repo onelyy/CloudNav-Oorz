@@ -45,6 +45,7 @@ const GITHUB_REPO_URL = 'https://github.com/Aaowu/CloudNav-Oorz';
 
 const LOCAL_STORAGE_KEY = 'cloudnav_data_cache';
 const AUTH_KEY = 'cloudnav_auth_token';
+const LAST_CATEGORY_KEY = 'cloudnav_last_category';
 const AUTH_TIME_KEY = 'lastLoginTime';
 const WEBDAV_CONFIG_KEY = 'cloudnav_webdav_config';
 const AI_CONFIG_KEY = 'cloudnav_ai_config';
@@ -103,7 +104,14 @@ function App() {
   // --- State ---
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  // 上次浏览的目录（CESI / 客户 …），下次打开直接回到那一页
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+      try {
+          return localStorage.getItem(LAST_CATEGORY_KEY) || 'all';
+      } catch {
+          return 'all';
+      }
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1933,6 +1941,29 @@ function App() {
       if (!cat.password) return false;
       return !unlockedCategoryIds.has(catId);
   };
+
+  // 记住当前目录：关掉页面下次打开直接回到这一页
+  useEffect(() => {
+      try {
+          if (selectedCategory && selectedCategory !== 'all') {
+              localStorage.setItem(LAST_CATEGORY_KEY, selectedCategory);
+          } else {
+              localStorage.removeItem(LAST_CATEGORY_KEY);
+          }
+      } catch {
+          /* 隐私模式下 localStorage 可能不可写，忽略 */
+      }
+  }, [selectedCategory]);
+
+  // 目录被删了、或者需要密码没解锁，就退回「置顶网站」，别让用户打开就卡在一个进不去的页面
+  useEffect(() => {
+      if (selectedCategory === 'all' || categories.length === 0) return;
+      const exists = categories.some(c => c.id === selectedCategory);
+      if (!exists || isCategoryLocked(selectedCategory)) {
+          setSelectedCategory('all');
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories, selectedCategory]);
 
   const pinnedLinks = useMemo(() => {
       // Don't show pinned links if they belong to a locked category
